@@ -4,6 +4,7 @@
 - Passwordless login
    - Magic links
    - OTP
+   - TOTP (2FA?)
 - Tokenrotation
 - Refresh endpoints
 
