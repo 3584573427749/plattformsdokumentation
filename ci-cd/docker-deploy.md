@@ -228,6 +228,102 @@ Deployment omfattar inte:
 Dessa ansvar hanteras separat.
 
 ***
+## Databasmigreringar
+
+Backend‑tjänster använder Phinx för att hantera databasmigreringar.
+
+---
+
+### Princip
+
+Databasmigreringar är en integrerad del av applikationen och kopplas direkt till varje deploy.
+
+Migreringar körs automatiskt vid container‑start för att säkerställa att databasschema alltid matchar applikationsversionen.
+
+---
+
+### Struktur
+
+Varje backend‑repo innehåller migreringar, vanligtvis i:
+
+/migrations
+
+Exempel:
+
+migrations/
+  2024060101_create_tables.php
+  2024060102_add_approved_at.php
+
+---
+
+### Körning
+
+Migreringar körs automatiskt vid start av service‑containern.
+
+Detta sker via containerns entrypoint:
+
+- Phinx körs innan applikationen startar
+- endast nya migreringar appliceras
+
+---
+
+### Flöde
+
+1. kodändring inkluderar migration
+2. CI bygger ny image
+3. container deployas
+4. container startar
+5. Phinx kör migreringar
+6. applikation startar
+
+---
+
+### Egenskaper
+
+- migreringar körs alltid (ingen risk att glömmas)
+- idempotent beteende via Phinx
+- schema och kod hålls synkroniserade
+
+---
+
+### Viktiga principer
+
+- migreringar ska vara bakåtkompatibla där möjligt
+- undvik destruktiva ändringar i samma steg som deploy
+- använd stegvis migrering (expand → migrate → cleanup)
+- testa alltid migreringar lokalt innan deployment
+
+---
+
+### Begränsningar
+
+Nuvarande lösning förutsätter:
+
+- en instans per service
+- ingen parallell uppstart av flera identiska containers
+
+Vid skalning bör migrationshantering kompletteras med:
+
+- låsning eller leader‑selection
+- separat migrations‑container
+
+---
+
+### Sammanfattning
+
+Databasmigreringar:
+
+- hanteras via Phinx
+- körs automatiskt vid container‑start
+- kräver ingen manuell intervention
+
+Detta säkerställer att:
+
+- schema alltid är uppdaterat
+- deployment är konsistent
+- fel på grund av uteblivna migreringar undviks
+
+---
 
 ## Sammanfattning
 
