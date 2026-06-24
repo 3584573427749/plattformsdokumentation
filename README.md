@@ -1,6 +1,8 @@
 # Plattformdokumentation
 
 Detta repository innehåller all centralt teknisk dokumentation för idrottsplattformen. Här finns arkitektur, API‑kontrakt, CI/CD‑flöden, PWA‑strategi och utvecklarriktlinjer.
+## Grunddokumentation
+- architecture/technical-spec.md
 
 ## Innehåll
 - **architecture/** – systemöversikt, mikrotjänster, frontendmodell, tokenflow
