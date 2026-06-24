@@ -72,6 +72,7 @@ Syfte:
 
 ---
 
+<<<<<<< HEAD
 ### 5. Kontraktstester
 
 Backend‑tjänster ska innehålla integrationstester som verifierar att implementationens responses överensstämmer med den publicerade OpenAPI‑specifikationen.
@@ -87,6 +88,8 @@ Syftet är att säkerställa att implementation och dokumentation inte divergera
 
 ---
 
+=======
+>>>>>>> e7fb320a300d80cfaac656e9066fc5616208d7f2
 ## Relation till Backend CI
 
 Backend definierar och publicerar OpenAPI‑kontraktet.
@@ -121,7 +124,10 @@ OpenAPI CI säkerställer att:
 - breaking changes upptäcks tidigt
 - versionering följs konsekvent
 - backend och frontend förblir synkroniserade
+<<<<<<< HEAD
 - implementationen överensstämmer med den publicerade OpenAPI‑specifikationen
+=======
+>>>>>>> e7fb320a300d80cfaac656e9066fc5616208d7f2
 
 ---
 

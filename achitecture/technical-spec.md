@@ -441,16 +441,6 @@ Gateway avgör vilka endpoints klienttypen får nå.
 
 ***
 
-# 5. Datamodell – Principer
-
-*   Alla tjänster har **separata databaser**.
-*   Alla PK är **GUID/UUID**.
-*   Endast auth\_db innehåller “systemanvändare”.
-*   Inga tjänster delar tabeller.
-*   Relationspilar mellan tjänster går alltid via API, aldrig SQL.
-
-***
-
 ## 4.4 Gateway‑API – Arkitektur, routing och säkerhet (Traefik + PHP‑gateway)
 
 Gateway‑API är systemets **enda publika ingång** och ansvarar för autentisering, klientpolicy och vidarebefordran av requests till interna mikrotjänster.  
@@ -664,6 +654,16 @@ Gateway som notifieringsentrypoint:
 
 Prefix: `/api/v1/…` → `/api/v2/…`  
 Hantera flera versioner parallellt.
+
+***
+
+# 5. Datamodell – Principer
+
+*   Alla tjänster har **separata databaser**.
+*   Alla PK är **GUID/UUID**.
+*   Endast auth\_db innehåller “systemanvändare”.
+*   Inga tjänster delar tabeller.
+*   Relationspilar mellan tjänster går alltid via API, aldrig SQL.
 
 ***
 
