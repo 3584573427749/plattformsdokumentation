@@ -1401,6 +1401,29 @@ Ingen domändata lagras här — endast identitets‑ och säkerhetsdata.
     Genererar hemlighet & QR‑kod för aktivering.
 *   `VerifyTotpAction`  
     Verifierar TOTP‑kod vid känsliga operationer.
+	
+##### Användarhantering
+
+Auth-service ansvarar även för hantering av systemanvändare. Dessa användare representerar identiteter i plattformen och används av övriga tjänster via user_id-referenser.
+
+Följande actions tillhandahålls:
+
+- ListUsersAction
+  Returnerar en lista över användare.
+
+- GetUserAction
+  Hämtar en specifik användare baserat på id.
+
+- CreateUserAction
+  Skapar en ny användare.
+
+- UpdateUserAction
+  Uppdaterar användarens namn, e-postadress eller övriga identitetsuppgifter.
+
+- DeleteUserAction
+  Avaktiverar användaren enligt aktuell strategi för soft delete.
+
+API:et används av administrativa gränssnitt och administrativa funktioner i plattformen.
 
 #### Roller och rättigheter (admin
 
@@ -1446,10 +1469,13 @@ Ingen domändata lagras här — endast identitets‑ och säkerhetsdata.
 
 #### UserService
 
-*   Skapande av användare i `users` (om det inte finns en sedan tidigare)
-*   Uppdatering av email/namn
-*   Hämtning av user‑objekt
-*   Hjälpfunktioner för lookup av roller/permissions
+* Skapande av användare i users
+* Uppdatering av användaruppgifter
+* Hämtning av enskild användare
+* Listning av användare
+* Avaktivering av användare enligt tjänstens soft delete-strategi
+* Validering av unika e-postadresser
+* Hjälpfunktioner för lookup av roller och permissions
 
 #### RoleService / PermissionService
 
@@ -2012,24 +2038,97 @@ Det är även här `client_type` i JWT dokumenteras.
 
 ***
 
-### 11.2.4 Felhantering
+#### 11.2.4 Felhantering
 
-Standardiserade fel gör API:er mer förutsägbara:
+Alla tjänster ska använda en gemensam felmodell för att ge ett konsekvent API-beteende oavsett endpoint eller mikrotjänst.
 
-```yaml
-"400":
-  description: Ogiltig begäran
-  content:
-    application/json:
-      schema:
-        $ref: "#/components/schemas/ErrorResponse"
+Felresponsen ska alltid följa samma övergripande struktur:
+
+```json
+{
+  "statusCode": 400,
+  "error": {
+    "type": "ValidationException",
+    "message": "Invalid request",
+    "details": null
+  }
+}
+````
+
+Fält:
+
+| Fält          | Beskrivning                                 |
+| ------------- | ------------------------------------------- |
+| statusCode    | HTTP-statuskoden som returneras             |
+| error.type    | Typ av fel eller exception                  |
+| error.message | Felmeddelande avsett för klienten           |
+| error.details | Ytterligare information om felet eller null |
+
+Följande principer gäller:
+
+* Alla felresponsar ska innehålla `statusCode`.
+* Alla felresponsar ska innehålla ett `error`-objekt.
+* Alla felresponsar ska använda samma struktur oavsett tjänst.
+* `details` får vara `null` om ingen ytterligare information finns.
+* Valideringsfel använder `details` för att beskriva vilka fält som orsakade felet.
+
+Exempel:
+
+##### 400 Bad Request
+
+```json
+{
+  "statusCode": 400,
+  "error": {
+    "type": "InvalidArgumentException",
+    "message": "Invalid UUID value",
+    "details": null
+  }
+}
 ```
 
-Detta används för att beskriva:
+##### 404 Not Found
 
-*   valideringsfel
-*   behörighetsfel
-*   domänfel
+```json
+{
+  "statusCode": 404,
+  "error": {
+    "type": "NotFoundException",
+    "message": "User not found",
+    "details": null
+  }
+}
+```
+
+##### 409 Conflict
+
+```json
+{
+  "statusCode": 409,
+  "error": {
+    "type": "UserAlreadyExistsException",
+    "message": "User already exists",
+    "details": null
+  }
+}
+```
+
+##### 422 Validation Error
+
+```json
+{
+  "statusCode": 422,
+  "error": {
+    "type": "ValidationException",
+    "message": "Validation failed",
+    "details": {
+      "email": "Invalid email address"
+    }
+  }
+}
+```
+
+OpenAPI-specifikationen för varje tjänst ska återanvända samma felmodell för samtliga standardiserade felkoder.
 
 ***
 
@@ -2701,21 +2800,38 @@ Detta är en **stark garanti** för att API‑kontraktet är stabilt för alla k
 
 ### 11.9.6 DTO‑validering i backend (runtime)
 
-Time‑, Auth‑ och Group‑service använder automatiska validators baserade på JSON‑schema från OpenAPI.
+Time‑, Auth‑, Group‑ och övriga tjänster använder automatiska validatorer baserade på OpenAPI‑specifikationen.
 
-Konsekvens:
+Konsekvenser:
 
-*   alla inkommande requests **valideras**
-*   backend returnerar **validerade responses**
-*   inget kan smygas in som inte matchar DTO:n
+* alla inkommande requests **valideras**
+* backend returnerar **validerade responses**
+* inget kan smygas in som inte matchar DTO:n
+* API‑kontraktet verifieras både vid körning och i testmiljö
 
 Exempel på verktyg:
 
-*   `league/openapi-psr7-validator`
-*   `cebe/php-openapi`
-*   JSON-schema validerare
+* `league/openapi-psr7-validator`
+* `cebe/php-openapi`
+* JSON Schema‑validatorer
 
-Detta är sista försvarslinjen om något trots allt fel hamnar i API‑definitionen.
+Runtime‑validering utgör den sista försvarslinjen om en felaktig implementation eller en felaktigt uppdaterad OpenAPI‑specifikation skulle nå ett körande system.
+
+#### Kontraktstester
+
+Utöver runtime‑validering ska varje tjänst innehålla integrationstester som verifierar att implementerade endpoints överensstämmer med den publicerade OpenAPI‑specifikationen.
+
+Kontraktstesterna ska:
+
+* validera responsens statuskod
+* validera responsens struktur mot OpenAPI‑schemat
+* verifiera att felmodeller följer API‑kontraktet
+* upptäcka avvikelser mellan implementation och dokumentation
+
+Dessa tester körs automatiskt i CI/CD och ska stoppa releaser där implementationen inte längre överensstämmer med det publicerade API‑kontraktet.
+
+Detta säkerställer att OpenAPI‑specifikationen förblir den enda källan till sanningen för API‑kontraktet och att klienter kan lita på att dokumenterade request‑ och response‑modeller faktiskt returneras av tjänsten.
+
 
 ***
 
@@ -3126,19 +3242,15 @@ Bygger en kompilerad bundle:
 
 ## 14.5 Release i CI
 
-När PR är mergad till huvudbranch kör CI automatiskt ett releaseflöde:
+Under aktiv utveckling triggas inte release automatiskt vid merge till main.
 
-1.  Läser `VERSION`‑filen
-2.  Skapar en git‑tagg, t.ex.:
+Release initieras genom att utvecklaren manuellt skapar och pushar en git-tagg som motsvarar VERSION-filen.
 
-<!---->
+CD-pipelinen verifierar att taggen överensstämmer med VERSION-filen innan artefakter publiceras.
 
-    results-service-v1.7.0
+Git-taggar kan skapas automatiskt vid release när tjänsten övergått till förvaltningsfas.
 
-3.  Bygger Docker‑image
-4.  Pushar till registry (DockerHub, GitHub Registry eller privat registry)
-5.  Genererar release‑notes (valfritt)
-6.  Triggar deployment‑steget
+Under aktiv utveckling skapas taggar manuellt av utvecklaren.
 
 ***
 
@@ -3617,6 +3729,97 @@ Dessa används automatiskt av alla repos i organisationen.
 
 ***
 
+### 17.7.1 Gemensamma workflows och tjänstespecifika releaser
+
+Organisationens `.github`-repository används för att lagra gemensamma resurser som kan återanvändas av flera tjänster och frontendprojekt, exempelvis:
+
+* Issue templates
+* Pull Request templates
+* CODEOWNERS
+* Återanvändbara GitHub Actions-workflows
+* Gemensamma CI/CD-komponenter
+
+Varje mikrotjänst och frontendapplikation ansvarar dock för sina egna release-triggers och sin egen versionering.
+
+Den rekommenderade modellen är därför:
+
+```text
+.github
+ └─ återanvändbara workflows
+
+auth-service
+ └─ release-trigger
+
+time-service
+ └─ release-trigger
+
+group-service
+ └─ release-trigger
+
+gateway-service
+ └─ release-trigger
+```
+
+En tjänst initierar själv sin releaseprocess, men kan använda gemensamma workflows från organisationens `.github`-repository för att undvika duplicerad konfiguration.
+
+### 17.7.2 Releaseprocess under aktiv utveckling
+
+Under den initiala utvecklingsfasen sker releaser manuellt.
+
+För att undvika onödig versionsbumpning vid varje merge till `main` skapas releaser endast när utvecklaren uttryckligen väljer att publicera en ny version.
+
+Processen är:
+
+1. VERSION-filen uppdateras enligt semver-reglerna.
+2. Kod mergas till `main`.
+3. Utvecklaren skapar manuellt en git-tagg som motsvarar VERSION-filen.
+4. Taggen pushas till GitHub.
+5. CD-pipelinen triggas.
+6. CD-pipelinen verifierar att git-taggen och VERSION-filen överensstämmer.
+7. Docker-image byggs och publiceras.
+
+Exempel:
+
+```text
+VERSION
+1.2.3
+```
+
+```bash
+git tag v1.2.3
+git push origin v1.2.3
+```
+
+CD-pipelinen ska avbrytas om:
+
+```text
+VERSION = 1.2.3
+Tagg    = v1.2.4
+```
+
+eller
+
+```text
+VERSION = 1.2.4
+Tagg    = v1.2.3
+```
+
+VERSION-filen är alltid den enda källan för sanningen om tjänstens version.
+
+### 17.7.3 Övergång till förvaltningsfas
+
+När plattformen når en stabil förvaltningsfas kan releaser automatiseras ytterligare.
+
+Då kan CI/CD:
+
+1. verifiera att VERSION-filen har uppdaterats,
+2. skapa git-taggar automatiskt,
+3. bygga och publicera Docker-images utan manuell taggning.
+
+Denna övergång påverkar inte versioneringsmodellen. VERSION-filen förblir den enda källan för sanningen om tjänstens version även när taggskapandet automatiseras.
+
+***
+
 ## 17.8 Secrets, environments och deploy‑policy
 
 Organisationen använder GitHub Environments:
@@ -3649,10 +3852,8 @@ Varje tjänst har en `VERSION`‑fil och följer semver enligt kapitel 14.
 *   MINOR bump vid nya endpoints/fält
 *   PATCH vid fixar
 *   GitHub Release skapas
-*   Docker‑image taggas:
+*   Minimikrav för varje release:
     *   `<service>:X.Y.Z`
-    *   `<service>:X.Y`
-    *   `<service>:X`
     *   `<service>:latest`
 
 ***

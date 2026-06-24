@@ -1,27 +1,18 @@
 # Backend Services
 
 ## Auth Service
-- Passwordless login
-   - Magic links
-   - OTP
-   - TOTP (2FA?)
-- Tokenrotation
-- Refresh endpoints
+Ansvarar för identitet, autentisering, auktorisering och användarhantering.
+
+Se: [Auth Service](../services/auth-service.md)
 
 ## Time Service
-- Tidrapportering
-- Traktamente
-- Milersättning
-- Attestflöden
+Ansvarar för tidrapportering, traktamente, milersättning och attestflöden.
 
 ## Group Service
-- Grupper
-- Ledare och assistentroller
-- Medlemskap
+Ansvarar för grupper, medlemskap och ledarroller.
 
 ## Results Service
-- Personhistorik
-- Resultat
+Ansvarar för atleter, licenshistorik och resultat.
 
-## Entries Service
-- Anmälningar
+## Competition Service
+Ansvarar för tävlingar, grenar och anmälningar.

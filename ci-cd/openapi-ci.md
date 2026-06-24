@@ -72,6 +72,24 @@ Syfte:
 
 ---
 
+<<<<<<< HEAD
+### 5. Kontraktstester
+
+Backend‑tjänster ska innehålla integrationstester som verifierar att implementationens responses överensstämmer med den publicerade OpenAPI‑specifikationen.
+
+Kontroller inkluderar:
+
+- statuskoder
+- response‑schema
+- felmodeller
+- obligatoriska och valfria fält
+
+Syftet är att säkerställa att implementation och dokumentation inte divergerar över tid.
+
+---
+
+=======
+>>>>>>> e7fb320a300d80cfaac656e9066fc5616208d7f2
 ## Relation till Backend CI
 
 Backend definierar och publicerar OpenAPI‑kontraktet.
@@ -106,6 +124,10 @@ OpenAPI CI säkerställer att:
 - breaking changes upptäcks tidigt
 - versionering följs konsekvent
 - backend och frontend förblir synkroniserade
+<<<<<<< HEAD
+- implementationen överensstämmer med den publicerade OpenAPI‑specifikationen
+=======
+>>>>>>> e7fb320a300d80cfaac656e9066fc5616208d7f2
 
 ---
 
@@ -113,11 +135,12 @@ OpenAPI CI säkerställer att:
 
 OpenAPI CI omfattar inte:
 
-- implementering av API
 - affärslogik
-- routing eller runtime‑beteende
+- routing
+- domänbeteende
+- funktionell korrekthet utanför det definierade API‑kontraktet
 
-Det verifierar endast kontraktet.
+OpenAPI CI verifierar både kontraktet och att implementerade endpoints följer kontraktet, men avgör inte om affärslogiken bakom endpointen är korrekt.
 
 ---
 
