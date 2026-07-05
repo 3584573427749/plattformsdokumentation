@@ -367,33 +367,320 @@ Detta är en modern teststack som passar perfekt för ett multi‑service‑proj
 
 ***
 
-# 3. Frontend-arkitektur
+## 3. Frontend-arkitektur
 
-## 3.1 PWA Tränare
+Frontenddelen av plattformen består av tre separata Vue-baserade klientapplikationer med olika målgrupper och användningsområden. Samtliga klienter använder Vue 3 och Vite som grund och kommunicerar med backend via Gateway-API. [1](https://github.com/3584573427749/plattformsdokumentation/blob/main/achitecture/technical-spec.md)
 
-*   Plattform: Vue 3 + Vite + TypeScript
-*   Funktion: tidsrapportering, resor, kvitton
-*   Långa sessioner via Refresh Tokens
-*   Offline‑stöd för lokala utkast
+### 3.1 PWA Tränare
 
-## 3.2 PWA Aktiva
+PWA Tränare är en mobilanpassad applikation för ledare och assistenter.
 
-*   Funktion: resultatvisning, PB/ÅB
-*   Publikt läge → ingen login
-*   Privat läge → magic‑link
-*   Minimalistisk UI
+#### Teknikstack
 
-## 3.3 Main UI
+- Vue 3
+- Vite
+- Pinia
+- Vue Router
+- OpenAPI-genererade TypeScript-typer
 
-*   Vue 3 + Vite + Vuetify
-*   Modulär struktur:
-        src/modules/
-          time-approval/
-          travel-approval/
-          results/
-          competitions/
-          permissions/
-*   Rollstyrd navigation
+#### Funktionalitet
+
+- Tidsrapportering
+- Reseräkningar
+- Hantering av utkast
+- Långa sessioner via refresh tokens
+- Offline-stöd för lokalt lagrade utkast
+
+#### State Management
+
+Applikationen använder Pinia för klientstate.
+
+Stores namnges konsekvent i singularform:
+
+- userStore
+- authStore
+- notificationStore
+
+---
+
+### 3.2 PWA Aktiva
+
+PWA Aktiva är en användarfokuserad klient för visning av resultat och personlig statistik.
+
+#### Teknikstack
+
+- Vue 3
+- Vite
+- Pinia
+- Vue Router
+- OpenAPI-genererade TypeScript-typer
+
+#### Funktionalitet
+
+- Resultatvisning
+- Personliga rekord
+- Årsbästa
+- Publikt läge utan inloggning
+- Privat läge via magic-link
+
+#### Designprinciper
+
+- Minimalistiskt gränssnitt
+- Snabb laddning
+- Hög mobilanpassning
+- Begränsat antal administrativa funktioner
+
+---
+
+### 3.3 Main UI (Admin UI)
+
+Main UI är plattformens administrativa webbgränssnitt och används av administratörer, attestanter och andra roller med utökade behörigheter.
+
+#### Teknikstack
+
+- Vue 3
+- Vite
+- Pinia
+- Vue Router
+- Vuetify
+- OpenAPI-genererade TypeScript-typer
+
+#### Modulär struktur
+
+Frontenden är modulärt uppbyggd och organiserad efter verksamhetsdomäner.
+
+Exempel:
+
+```text
+src/
+├── api/
+├── components/
+├── generated/
+├── router/
+├── services/
+├── stores/
+└── views/
+```
+
+#### State Management
+
+Pinia används för all applikationsstate.
+
+Stores namnges i singularform:
+
+- userStore
+- notificationStore
+- authStore
+
+#### Notifieringssystem
+
+Applikationen använder ett centralt toast-baserat notifieringssystem.
+
+Alla användarmeddelanden hanteras via notificationStore:
+
+```javascript
+notifications.success('Användaren skapades.');
+notifications.error(error);
+```
+
+notificationStore ansvarar för:
+
+- visning av toast-notifieringar
+- översättning av API-fel till användarvänliga meddelanden
+- hantering av valideringsfel från OpenAPI-baserade API:er
+- konsekvent presentation av felmeddelanden i UI
+
+#### API-integration
+
+OpenAPI används som kontraktskälla för frontenden.
+
+```text
+openapi.yaml
+        ↓
+npm run generate-types
+        ↓
+src/generated/types.ts
+        ↓
+Services
+        ↓
+Pinia Stores
+        ↓
+Vue-komponenter
+```
+
+#### Navigering
+
+Main UI använder rollstyrd navigering där synliga menyer och funktioner styrs av användarens roller och rättigheter från Auth-service.
+
+***
+
+## 3.4 Frontend-kvalitetssäkring
+
+Frontendprojekten följer samma grundprinciper för kvalitetssäkring som backendtjänsterna, men använder verktyg anpassade för Vue, Vite och moderna webbapplikationer.
+
+Målet är att säkerställa:
+
+- korrekt funktionalitet
+- hög kodkvalitet
+- konsekvent kodstil
+- stabila API-integrationer
+- säkra releaser
+
+### Enhetstester och komponenttester
+
+Frontenden använder Vitest som primärt testverktyg.
+
+Tester skrivs för:
+
+- Services
+- Pinia Stores
+- Vue-komponenter
+- Hjälpfunktioner
+
+Exempel:
+
+- notificationStore
+- userStore
+- ToastItem
+
+Körning:
+
+```bash
+npm run test:unit
+```
+
+### End-to-End-tester
+
+Playwright används för användarflöden som involverar flera lager av applikationen.
+
+Exempel på lämpliga scenarier:
+
+- autentisering
+- behörighetsstyrning
+- kritiska användarflöden
+- navigeringsflöden
+
+Körning:
+
+```bash
+npm run test:e2e
+```
+
+Under aktiv utveckling kan E2E-tester köras lokalt utan att vara obligatoriska i CI.
+
+### ESLint
+
+ESLint används för statisk analys och kodkvalitet.
+
+Kontroller omfattar exempelvis:
+
+- odefinierade variabler
+- oanvänd kod
+- inkonsekvent kodstil
+- vanliga JavaScript-fel
+
+Körning:
+
+```bash
+npm run lint
+```
+
+### Prettier
+
+Prettier används för automatisk kodformatering.
+
+Formatering:
+
+```bash
+npm run format
+```
+
+Verifiering:
+
+```bash
+npm run format:check
+```
+
+### OpenAPI-validering
+
+Frontendprojekt som innehåller OpenAPI-specifikationer validerar dessa i CI.
+
+Kontroller omfattar:
+
+- syntaxvalidering
+- schema-validering
+
+Genererade typer verifieras mot den aktuella OpenAPI-specifikationen.
+
+### Build-verifiering
+
+Samtliga frontendprojekt ska kunna byggas i produktionsläge innan kod får releasas.
+
+Körning:
+
+```bash
+npm run build
+```
+
+Byggsteget säkerställer att:
+
+- alla moduler kan kompileras
+- genererade typer är giltiga
+- importkedjor är korrekta
+- produktionsbygget fungerar
+
+### CI-pipeline
+
+Frontendens CI-pipeline genomför normalt följande steg:
+
+1. Installera beroenden
+2. OpenAPI-validering
+3. ESLint
+4. Enhetstester
+5. Produktionsbuild
+6. Säkerhetsskanning
+
+### Teststrategi
+
+Frontendtestning sker på flera nivåer:
+
+#### Enhetstester
+
+Verifierar:
+
+- affärslogik
+- hjälpfunktioner
+- services
+- stores
+
+#### Komponenttester
+
+Verifierar:
+
+- rendering
+- användarinteraktioner
+- komponentbeteenden
+
+#### End-to-End-tester
+
+Verifierar:
+
+- kompletta användarflöden
+- integration mellan frontend och backend
+- autentiserings- och behörighetsflöden
+
+### Sammanfattning
+
+Frontendens kvalitetssäkring bygger på:
+
+- Vitest
+- Playwright
+- ESLint
+- Prettier
+- OpenAPI-validering
+- automatiserade CI-kontroller
+
+Detta ger en modern, lättviktig och effektiv kvalitetssäkringsprocess som är väl anpassad för Vue-baserade klientapplikationer.
 
 ***
 
@@ -2132,24 +2419,132 @@ OpenAPI-specifikationen för varje tjänst ska återanvända samma felmodell fö
 
 ***
 
-## 11.3 Genererade klienter (TypeScript m.fl.)
+## 11.3 Genererade klienter och typer
 
-OpenAPI används för att generera **type‑safe API‑klienter** till dina frontends.
+OpenAPI används för att generera type-safe modeller och klientnära typer till plattformens frontendapplikationer.
 
-Dina tre frontends (PWA Tränare, PWA Aktiva, Main UI) kan använda automatiskt genererade klienter som innehåller:
+Samtliga frontendprojekt använder OpenAPI som den enda källan till sanningen för API-kontraktet.
 
-*   datamodeller som `Athlete`, `Result`, `TimeEntry`, `TravelReport`
-*   functions med korrekt typning:  
-    `getAthleteResults(id: string): Promise<AthleteResults>`
-*   feltyper och validering
+### Mål
 
-Vanliga generatorer:
+Genom att generera typer från OpenAPI uppnås:
 
-*   `openapi-typescript`
-*   `openapi-generator-cli`
-*   `swagger-typescript-api`
+- stark typning i frontend
+- minimerad risk för kontraktsavvikelser
+- minskad mängd duplicerad kod
+- snabbare utveckling
+- enklare refaktorering
 
-Detta eliminerar duplikation av modeller i frontend och minskar fel.
+### Typgenerering
+
+Frontendprojekten genererar typer från tjänsternas OpenAPI-specifikationer.
+
+Exempel:
+
+```bash
+npm run generate-types
+```
+
+Genereringen skapar:
+
+```text
+src/generated/types.ts
+```
+
+vilket används direkt av services, stores och komponenter.
+
+### Vanliga verktyg
+
+Följande verktyg kan användas:
+
+- openapi-typescript
+- openapi-generator-cli
+- swagger-typescript-api
+
+Projektets standardverktyg är openapi-typescript.
+
+### Arkitektur
+
+```text
+openapi.yaml
+        ↓
+openapi-typescript
+        ↓
+src/generated/types.ts
+        ↓
+API Services
+        ↓
+Pinia Stores
+        ↓
+Vue-komponenter
+```
+
+### Principer
+
+#### OpenAPI är kontraktet
+
+OpenAPI-specifikationen är den enda källan som definierar:
+
+- endpoints
+- request-modeller
+- response-modeller
+- felmodeller
+
+#### Genererade typer ändras inte manuellt
+
+Filen:
+
+```text
+src/generated/types.ts
+```
+
+ska inte redigeras manuellt.
+
+Alla ändringar ska göras i:
+
+```text
+openapi.yaml
+```
+
+och därefter genereras om.
+
+#### Kontinuerlig verifiering
+
+CI validerar OpenAPI-specifikationerna genom:
+
+- syntaxvalidering
+- schema-validering
+
+Det säkerställer att specifikationerna kan användas som grund för typgenerering och dokumentation.
+
+### Användning i frontend
+
+Typer används direkt i:
+
+- API-klienter
+- Services
+- Stores
+- Vue-komponenter
+- Formulärvalidering
+
+Det säkerställer att frontend och backend alltid använder samma modeller.
+
+### Felmodeller
+
+OpenAPI-genererade felmodeller används tillsammans med frontendens centrala notifieringssystem.
+
+API-fel kan skickas direkt till notificationStore, som ansvarar för att presentera användarvänliga felmeddelanden och valideringsfel.
+
+### Sammanfattning
+
+OpenAPI-genererade typer ger:
+
+- konsekventa modeller mellan frontend och backend
+- stark typning
+- mindre duplicerad kod
+- enklare underhåll
+- snabbare utveckling
+- färre integrationsfel
 
 ***
 
@@ -2766,14 +3161,7 @@ CI använder ett verktyg som `openapi-diff` för att jämföra PR‑ens OpenAPI�
 *   **Non‑breaking additions** (MINOR)
 *   **Fixes/metadata** (PATCH)
 
-Om en breaking change detekteras:
-
-→ **CI stoppar PR**  
-→ utvecklaren måste **bumpa VERSION‑filen** från  
-`X.Y.Z` → `(X+1).0.0`  
-→ dokumentera ändringen i release‑notes
-
-Detta förhindrar att en förändring av DTO:erna oväntat bryter UI eller andra tjänster.
+OpenAPI-specifikationen valideras i CI med syntax- och schemavalidering. Detect breaking changes kan återinföras senare när lämplig verktygskedja etablerats.
 
 ***
 
@@ -2789,7 +3177,7 @@ som följer Semver:
 
 CI säkerställer:
 
-*   att VERSION‑filen **ändras i PR** om OpenAPI har ändrats
+*   VERSION-filen uppdateras endast vid release. CI verifierar inte VERSION vid vanliga PR:er eller merge till main.
 *   att MAJOR‑bump görs när API görs inkompatibelt
 *   att MINOR‑bump görs vid nya fält/endpoints
 *   att PATCH används när kontraktet är oförändrat
@@ -2999,41 +3387,11 @@ Fördelar:
 
 ***
 
-## 12.5 CI‑kontroll av versionering
+## 12.5 CI/CD-kontroll av versionering
 
-CI/CD säkerställer att versionen är korrekt genom följande kontroller:
-
-### 1) VERSION måste ändras om kod ändrats
-
-CI stoppar bygget om:
-
-*   filer i `src/` eller `actions/` ändrats
-*   inga ändringar gjorts i `VERSION`‑filen
-
-### 2) OpenAPI‑diff (valfritt men rekommenderat)
-
-Om OpenAPI-specifikationen ändras kan CI upptäcka:
-
-*   breaking changes → kräver MAJOR
-*   additions → MINOR
-*   inga schemaändringar → PATCH
-
-Detta gör API‑versioneringen förutsägbar och säker.
-
-### 3) Versionsnummer används vid Docker‑taggning
-
-CI genererar taggar:
-
-    <service>:1.4.2
-    <service>:1.4
-    <service>:1
-    <service>:latest
-
-### 4) Git-taggar skapas automatiskt vid release
-
-Om du vill (valfritt):
-
-    git tag auth-service-v1.4.2
+*   CI verifierar kodkvalitet, tester och byggbarhet.
+*   VERSION kontrolleras endast i release-pipelinen.
+*   Release-pipelinen verifierar att git-tagg och VERSION-fil överensstämmer.
 
 ***
 
@@ -3044,6 +3402,8 @@ Varje frontend:
 *   PWA Tränare
 *   PWA Aktiva
 *   Main UI
+*   VERSION exponeras i UI via Vite build-konstanten __APP_VERSION__.
+*   Versionen visas i gränssnittet och kan användas vid felsökning.
 
 har sin egen versionering enligt samma semver-regler.
 
@@ -3153,7 +3513,7 @@ Varje tjänst och UI följer exakt samma stegstruktur, men har sina egna pipelin
 
 ***
 
-## 14.2 Lokal utveckling (pre‑release)
+## 	 Lokal utveckling (pre‑release)
 
 Vid lokal utveckling ansvarar utvecklaren för att:
 
@@ -3178,7 +3538,7 @@ GrumPHP förhindrar "defekta" commits:
 
 ### ✔ Uppdatera `VERSION`‑filen
 
-Utvecklaren bump:ar versionen enligt:
+VERSION uppdateras när en release förbereds, inte vid varje kodändring:
 
 *   PATCH – småfixar
 *   MINOR – nya funktioner
@@ -3370,7 +3730,7 @@ En breaking change kan av misstag märkas som PATCH eller MINOR, vilket kan leda
 **Mitigering:**
 
 *   VERSION‑fil per tjänst
-*   CI: kontroll att VERSION ändrats vid kodändring
+*   Release-pipelinen verifierar att VERSION överensstämmer med releasetaggen.
 *   CI: OpenAPI‑diff → krav på korrekt semver‑bump
 *   tydliga guidelines i utvecklingsprocessen
 
@@ -3648,7 +4008,6 @@ Modell: **main + feature branches**
 
 *   minst 1 approved review
 *   CI måste vara grön
-*   VERSION‑fil måste vara uppdaterad vid OpenAPI‑ändring
 *   inga direkt‑commits till main
 
 ***
@@ -3668,7 +4027,6 @@ Modell: **main + feature branches**
     *   Infection (mutation testing)
     *   OpenAPI‑linter
     *   openapi-diff
-*   Version måste bumpas vid API‑ändringar
 
 ### PR‑template (förslag):
 
