@@ -55,6 +55,28 @@ Exempel:
 * tränare
 * funktionär
 
+#### Rollhierarki
+
+Roller används både för behörighetskontroll och för administrativ delegering.
+
+Varje roll tillhör en administrativ nivå.
+
+Exempel:
+
+| Nivå | Roll |
+|--------|--------|
+| 100 | Admin |
+| 50 | Verksamhetsledare |
+| 10 | Tränare |
+| 0 | Användare |
+
+Regler:
+
+- användare får inte tilldela roller med högre nivå än sin egen
+- användare får inte höja sin egen behörighetsnivå
+- användare utan administrativ roll får inte tilldela roller
+- vissa roller kan sakna åtkomst till Admin UI helt
+
 ### Permissions
 
 Representerar individuella rättigheter i systemet.
@@ -85,7 +107,18 @@ Detta API används primärt av Admin UI.
 
 ## Authentication API
 
-Auth Service exponerar API:er för autentisering.
+### Rolltilldelning
+
+Auth Service ansvarar för kopplingen mellan användare och roller.
+
+Funktioner:
+
+- hämta roller för en användare
+- hämta användare för en roll
+- tilldela roller till användare
+- ta bort roller från användare
+
+Rolltilldelningar hanteras som relationer mellan Users och Roles och utgör grunden för plattformens rollbaserade åtkomstkontroll.
 
 ### Magic Links
 
